@@ -33,6 +33,7 @@ jobs:
         shell: powershell
         run: |
           $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
+          # Sử dụng Join-Path để tránh lỗi ký tự đặc biệt
           $installerPath = Join-Path $env:TEMP "tailscale.msi"
           Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
           Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
@@ -41,6 +42,7 @@ jobs:
       - name: Establish Tailscale Connection
         shell: powershell
         run: |
+          # Sửa đường dẫn thực thi với dấu gạch chéo chuẩn
           & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
           $tsIP = $null
           for($i=0; $i -lt 10; $i++) {
