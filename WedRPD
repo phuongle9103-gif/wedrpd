@@ -34,19 +34,19 @@ jobs:
           try {
               # Enable Remote Desktop
               Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
-                                 -Name "fDenyTSConnections" -Value 0 -Force
+                -Name "fDenyTSConnections" -Value 0 -Force
               
               # Enable Network Level Authentication (for security)
               Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
-                                 -Name "UserAuthentication" -Value 1 -Force
+                -Name "UserAuthentication" -Value 1 -Force
               
               # Set Security Layer to highest
               Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
-                                 -Name "SecurityLayer" -Value 2 -Force
+                -Name "SecurityLayer" -Value 2 -Force
               
               # Set encryption level to high
               Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' `
-                                 -Name "MinEncryptionLevel" -Value 3 -Force
+                -Name "MinEncryptionLevel" -Value 3 -Force
 
               # Configure firewall
               Write-Host "Configuring firewall..."
@@ -73,27 +73,7 @@ jobs:
           Write-Host "Creating RDP user..."
           
           try {
-              Add-Type -AssemblyName System.Security
-              
-              # Define character sets for password
-              $Upper = [char[]](65..90)
-              $Lower = [char[]](97..122)
-              $Number = [char[]](48..57)
-              $Special = @('@', '#', '$', '%', '&', '!', '?', '+', '=')
-              
-              # Generate secure password
-              $password = @()
-              $password += $Upper | Get-Random -Count 4
-              $password += $Lower | Get-Random -Count 4
-              $password += $Number | Get-Random -Count 4
-              $password += $Special | Get-Random -Count 2
-              
-              $password = -join ($password | Sort-Object { Get-Random })
-              
-              if ($password.Length -lt 14) {
-                  Write-Error "Password generation failed"
-                  exit 1
-              }
+              $password = "5436"
               
               # Check if user already exists
               $existingUser = Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue
