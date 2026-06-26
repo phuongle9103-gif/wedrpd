@@ -58,9 +58,12 @@ jobs:
           }
 
       - name: Install Tailscale
+        shell: powershell
         run: |
           $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          $installerPath = "$env:TEMP	ailscale.msi"
+          # Sử dụng Join-Path để hệ thống tự xử lý dấu gạch chéo
+          # Đổi tên file để tránh hoàn toàn lỗi ký tự \t
+          $installerPath = Join-Path $env:TEMP "tailscale_installer.msi"
           
           Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
           Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
