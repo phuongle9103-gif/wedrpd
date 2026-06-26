@@ -68,40 +68,6 @@ jobs:
               exit 1
           }
 
-      - name: Create RDP User
-        run: |
-          Write-Host "Creating RDP user..."
-          
-          try {
-              $password = "5436"
-              
-              # Check if user already exists
-              $existingUser = Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue
-              if ($existingUser) {
-                  Write-Host "Removing existing RDP user..."
-                  Remove-LocalUser -Name "RDP" -Force
-                  Start-Sleep -Seconds 1
-              }
-              
-              # Create user
-              $securePass = ConvertTo-SecureString $password -AsPlainText -Force
-              New-LocalUser -Name "RDP" -Password $securePass -PasswordNeverExpires -ErrorAction Stop | Out-Null
-              
-              # Add to groups
-              Add-LocalGroupMember -Group "Administrators" -Member "RDP" -ErrorAction Stop
-              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP" -ErrorAction Stop
-              
-              # Save password to GitHub env (will be masked)
-              Write-Host "::add-mask::$password"
-              Add-Content -Path $env:GITHUB_ENV -Value "RDP_PASSWORD=$password"
-              
-              Write-Host "✓ RDP user created successfully"
-          }
-          catch {
-              Write-Error "Failed to create RDP user: $_"
-              exit 1
-          }
-
       - name: Install Tailscale
         run: |
           Write-Host "Installing Tailscale..."
@@ -225,19 +191,19 @@ jobs:
         run: |
           Write-Host ""
           Write-Host "╔═════════════════════════════════════════════════════════╗"
-          Write-Host "║        RDP ACCESS INFORMATION - KEEP SECURE             ║"
+          Write-Host "║        RDP ACCESS INFORMATION - SECURE CONNECTION       ║"
           Write-Host "╠═════════════════════════════════════════════════════════╣"
           Write-Host "║ Tailscale IP  : $env:TAILSCALE_IP"
           Write-Host "║ Port          : 3389"
-          Write-Host "║ Username      : RDP"
-          Write-Host "║ Password      : $env:RDP_PASSWORD"
+          Write-Host "║ Available Users:"
+          Write-Host "║   • runneradmin"
+          Write-Host "║   • RDP"
           Write-Host "║"
           Write-Host "║ Connection    : via Tailscale (secure VPN)"
           Write-Host "╚═════════════════════════════════════════════════════════╝"
           Write-Host ""
           Write-Host "⚠️  SECURITY NOTES:"
-          Write-Host "   • Store credentials securely"
-          Write-Host "   • Password will not be shown again"
+          Write-Host "   • Use runneradmin or RDP user for login"
           Write-Host "   • Connection is encrypted via Tailscale"
           Write-Host "   • Session will timeout after specified duration"
           Write-Host ""
