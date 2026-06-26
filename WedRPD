@@ -51,8 +51,21 @@ jobs:
         run: |
           Write-Host "Creating RDP user..."
           
-          # Set fixed password
-          $password = "5436"
+          Add-Type -AssemblyName System.Security
+          
+          # Define character sets
+          $Upper = [char[]](65..90)
+          $Lower = [char[]](97..122)
+          $Number = [char[]](48..57)
+          $Special = ([char[]](33..47) + [char[]](58..64) + [char[]](91..96) + [char[]](123..126))
+          
+          # Generate secure password
+          $password = @()
+          $password += $Upper | Get-Random -Count 4
+          $password += $Lower | Get-Random -Count 4
+          $password += $Number | Get-Random -Count 4
+          $password += $Special | Get-Random -Count 4
+          $password = -join ($password | Sort-Object { Get-Random })
           
           # Check if user already exists
           $existingUser = Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue
@@ -61,7 +74,7 @@ jobs:
               Remove-LocalUser -Name "RDP" -Force
           }
           
-          # Create user with fixed password
+          # Create user
           $securePass = ConvertTo-SecureString $password -AsPlainText -Force
           New-LocalUser -Name "RDP" -Password $securePass -AccountNeverExpires -ErrorAction Stop
           
@@ -181,7 +194,7 @@ jobs:
           Write-Host "║ Password      : $env:RDP_PASSWORD"
           Write-Host "╚═════════════════════════════════════════════════════════╝"
           Write-Host ""
-          Write-Host "✅ RDP is ready to connect!"
+          Write-Host "⚠️  Store this password securely - it will not be shown again"
           Write-Host ""
 
       - name: Keep Session Alive
