@@ -57,18 +57,21 @@ jobs:
               exit 1
           }
 
-      - name: Install Tailscale
-        shell: powershell
-        run: |
-          $tsUrl = "https://pkgs.tailscale.com/stable/tailscale-setup-1.82.0-amd64.msi"
-          # Sử dụng Join-Path để hệ thống tự xử lý dấu gạch chéo
-          # Đổi tên file để tránh hoàn toàn lỗi ký tự \t
-          $installerPath = Join-Path $env:TEMP "tailscale_installer.msi"
-          
-          Invoke-WebRequest -Uri $tsUrl -OutFile $installerPath
-          Start-Process msiexec.exe -ArgumentList "/i", "`"$installerPath`"", "/quiet", "/norestart" -Wait
-          Remove-Item $installerPath -Force
+      # Ví dụ bước trong workflow
+- name: Install Tailscale (if needed)
+  if: runner.os == 'Windows'
+  run: choco install tailscale -y
+  shell: pwsh
 
+- name: Start Tailscale
+  shell: pwsh
+  run: |
+    $exe = Join-Path $env:ProgramFiles 'Tailscale\tailscale.exe'
+    if (-not (Test-Path $exe)) {
+      Write-Error "Tailscale not found at $exe. Install step may have failed."
+      exit 1
+    }
+    & $exe up --authkey=${{ secrets.TS_AUTHKEY }} --hostname "my-runner-hostname"
       - name: Establish Tailscale Connection
         run: |
           # Bring up Tailscale with the provided auth key and set a unique hostname
