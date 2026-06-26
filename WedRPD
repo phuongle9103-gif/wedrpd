@@ -15,6 +15,7 @@ jobs:
               Write-Error "TAILSCALE_AUTH_KEY secret is not set"
               exit 1
           }
+          Write-Host "✓ Secrets verified"
         env:
           TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
@@ -44,27 +45,14 @@ jobs:
           # Restart RDP service
           Write-Host "Restarting RDP service..."
           Restart-Service -Name TermService -Force
-          Write-Host "RDP configuration completed"
+          Write-Host "✓ RDP configuration completed"
 
       - name: Create RDP User
         run: |
           Write-Host "Creating RDP user..."
           
-          Add-Type -AssemblyName System.Security
-          
-          # Define character sets
-          $Upper = [char[]](65..90)
-          $Lower = [char[]](97..122)
-          $Number = [char[]](48..57)
-          $Special = ([char[]](33..47) + [char[]](58..64) + [char[]](91..96) + [char[]](123..126))
-          
-          # Generate secure password
-          $password = @()
-          $password += $Upper | Get-Random -Count 4
-          $password += $Lower | Get-Random -Count 4
-          $password += $Number | Get-Random -Count 4
-          $password += $Special | Get-Random -Count 4
-          $password = -join ($password | Sort-Object { Get-Random })
+          # Set fixed password
+          $password = "5436"
           
           # Check if user already exists
           $existingUser = Get-LocalUser -Name "RDP" -ErrorAction SilentlyContinue
@@ -73,7 +61,7 @@ jobs:
               Remove-LocalUser -Name "RDP" -Force
           }
           
-          # Create user
+          # Create user with fixed password
           $securePass = ConvertTo-SecureString $password -AsPlainText -Force
           New-LocalUser -Name "RDP" -Password $securePass -AccountNeverExpires -ErrorAction Stop
           
@@ -81,11 +69,11 @@ jobs:
           Add-LocalGroupMember -Group "Administrators" -Member "RDP" -ErrorAction Stop
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "RDP" -ErrorAction Stop
           
-          # Mask and save password
+          # Mask and save password to GitHub env
           Write-Host "::add-mask::$password"
           echo "RDP_PASSWORD=$password" >> $env:GITHUB_ENV
           
-          Write-Host "RDP user created successfully"
+          Write-Host "✓ RDP user created successfully"
 
       - name: Install Tailscale
         run: |
@@ -107,7 +95,7 @@ jobs:
               }
               
               Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
-              Write-Host "Tailscale installed successfully"
+              Write-Host "✓ Tailscale installed successfully"
           }
           catch {
               Write-Error "Failed to install Tailscale: $_"
@@ -127,7 +115,7 @@ jobs:
           
           try {
               & $tailscaleExe up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
-              Write-Host "Tailscale connected"
+              Write-Host "✓ Tailscale connected"
           }
           catch {
               Write-Error "Failed to start Tailscale: $_"
@@ -146,7 +134,7 @@ jobs:
               try {
                   $tsIP = & $tailscaleExe ip -4 2>$null
                   if ($tsIP) {
-                      Write-Host "Tailscale IP acquired: $tsIP"
+                      Write-Host "✓ Tailscale IP acquired: $tsIP"
                       echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
                       exit 0
                   }
@@ -174,7 +162,7 @@ jobs:
           $result = Test-NetConnection -ComputerName $env:TAILSCALE_IP -Port 3389 -WarningAction SilentlyContinue
           
           if ($result.TcpTestSucceeded) {
-              Write-Host "RDP port 3389 is accessible"
+              Write-Host "✓ RDP port 3389 is accessible"
           }
           else {
               Write-Error "RDP port 3389 is not accessible"
@@ -184,14 +172,16 @@ jobs:
       - name: Display Access Information
         run: |
           Write-Host ""
-          Write-Host "╔════════════════════════════════════╗"
-          Write-Host "║       RDP ACCESS INFORMATION       ║"
-          Write-Host "╠════════════════════════════════════╣"
-          Write-Host "║ Tailscale IP: $env:TAILSCALE_IP"
-          Write-Host "║ Port: 3389"
-          Write-Host "║ Username: RDP"
-          Write-Host "║ Password: Check GitHub Actions env"
-          Write-Host "╚════════════════════════════════════╝"
+          Write-Host "╔═════════════════════════════════════════════════════════╗"
+          Write-Host "║            RDP ACCESS INFORMATION                       ║"
+          Write-Host "╠═════════════════════════════════════════════════════════╣"
+          Write-Host "║ Tailscale IP  : $env:TAILSCALE_IP"
+          Write-Host "║ Port          : 3389"
+          Write-Host "║ Username      : RDP"
+          Write-Host "║ Password      : $env:RDP_PASSWORD"
+          Write-Host "╚═════════════════════════════════════════════════════════╝"
+          Write-Host ""
+          Write-Host "✅ RDP is ready to connect!"
           Write-Host ""
 
       - name: Keep Session Alive
